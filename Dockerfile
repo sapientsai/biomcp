@@ -4,8 +4,8 @@ FROM python:3.11-slim
 # set work directory
 WORKDIR /app
 
-# Install build dependencies and git (needed for AlphaGenome)
-RUN apt-get update && apt-get install -y --no-install-recommends gcc build-essential git && rm -rf /var/lib/apt/lists/*
+# Install build dependencies, git (needed for AlphaGenome), and curl (for health checks)
+RUN apt-get update && apt-get install -y --no-install-recommends gcc build-essential git curl && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements (pyproject.toml, etc.)
 COPY pyproject.toml .
@@ -29,8 +29,17 @@ RUN git clone https://github.com/google-deepmind/alphagenome.git /tmp/alphagenom
 # Expose port for remote MCP connections
 EXPOSE 8000
 
-# Set default mode to worker, but allow it to be overridden
-ENV MCP_MODE=stdio
+# Set default mode to streamable_http for Docker deployments
+ENV MCP_MODE=streamable_http
+
+# Health check for the MCP server
+# Use -L to follow redirects from /mcp to /mcp/
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -sfL -X POST http://localhost:8000/mcp \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json, text/event-stream" \
+        -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"healthcheck","version":"1.0"}}}' \
+        | grep -q "protocolVersion" || exit 1
 
 # Run the MCP server with configurable mode
 CMD ["sh", "-c", "biomcp run --mode ${MCP_MODE}"]
