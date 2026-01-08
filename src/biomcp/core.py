@@ -5,8 +5,8 @@ from enum import Enum
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.server import TransportSecuritySettings
 from mcp.server.fastmcp.utilities.logging import get_logger
+from mcp.server.transport_security import TransportSecuritySettings
 
 from .logging_filter import setup_logging_filters
 
