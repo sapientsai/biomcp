@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.server import TransportSecuritySettings
 from mcp.server.fastmcp.utilities.logging import get_logger
 
 from .logging_filter import setup_logging_filters
@@ -28,10 +29,15 @@ async def lifespan(mcp):
 
 # Initialize the MCP app with lifespan
 # Note: stateless_http=True is needed for proper streamable HTTP support
+# DNS rebinding protection disabled for deployment behind reverse proxy (Traefik)
+# See: https://github.com/modelcontextprotocol/python-sdk/issues/1798
 mcp_app = FastMCP(
     name="BioMCP - Biomedical Model Context Protocol Server",
     lifespan=lifespan,
     stateless_http=True,  # Enable stateless HTTP for streamable transport
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=False
+    ),
 )
 
 
